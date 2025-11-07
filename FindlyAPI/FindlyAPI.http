@@ -1,0 +1,6 @@
+@FindlyAPI_HostAddress = http://localhost:5132
+
+GET {{FindlyAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
