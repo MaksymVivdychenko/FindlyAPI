@@ -7,7 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddDbContext<FindlyDbContext>(
-    options => options.UseSqlServer())
+    options => options.UseSqlServer(builder.Configuration
+        .GetConnectionString("FindlyDbConnectionString")));
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 

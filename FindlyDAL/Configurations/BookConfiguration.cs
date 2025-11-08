@@ -20,8 +20,8 @@ public class BookConfiguration : BaseConfiguration<Book>
         builder.HasMany(q => q.Authors).WithMany(q => q.Books)
             .UsingEntity(
                 "authors_books",
-                q => q.HasOne(typeof(Author)).WithMany().HasPrincipalKey("authorId"),
-                q => q.HasOne(typeof(Book)).WithMany().HasPrincipalKey("bookId"),
+                q => q.HasOne(typeof(Author)).WithMany().HasForeignKey("authorId"),
+                q => q.HasOne(typeof(Book)).WithMany().HasForeignKey("bookId"),
                 q => q.HasKey("authorId", "bookId"));
     }
 }

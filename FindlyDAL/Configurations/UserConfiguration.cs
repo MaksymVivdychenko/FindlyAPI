@@ -16,12 +16,10 @@ public class UserConfiguration : BaseConfiguration<User>
                 "user_liked_offers",
                 u => u.HasOne(typeof(Offer))
                     .WithMany()
-                    .HasForeignKey("userId")
-                    .HasPrincipalKey(nameof(Offer.Id)),
+                    .HasForeignKey("userId"),
                 o => o.HasOne(typeof(User))
                     .WithMany()
-                    .HasForeignKey("offerId")
-                    .HasPrincipalKey(nameof(User.Id)),
-                q => q.HasKey("userId, offerId"));
+                    .HasForeignKey("offerId"),
+                q => q.HasKey("userId" , "offerId"));
     }
 }
