@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindlyAPI", "FindlyAPI\Find
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindlyDAL", "FindlyDAL\FindlyDAL.csproj", "{E9DD93D7-6773-4514-8B3D-81C5E33128FB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FindlyScrapper", "FindlyScrapper\FindlyScrapper.csproj", "{3D356640-2F8F-4900-9772-1FEE24894F02}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{E9DD93D7-6773-4514-8B3D-81C5E33128FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E9DD93D7-6773-4514-8B3D-81C5E33128FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E9DD93D7-6773-4514-8B3D-81C5E33128FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D356640-2F8F-4900-9772-1FEE24894F02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D356640-2F8F-4900-9772-1FEE24894F02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D356640-2F8F-4900-9772-1FEE24894F02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D356640-2F8F-4900-9772-1FEE24894F02}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
