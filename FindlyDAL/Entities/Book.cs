@@ -8,10 +8,17 @@ public class Book : BaseEntity
 {
     public string ISBN_13 { get; set; }
     public string Title { get; set; }
-    public JsonNode Author { get; set; }
-    public string Publisher { get; set; }
-    public string Language { get; set; }
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
     public List<Offer> Offers { get; set; }
+    public List<Author> Authors { get; set; }
+    
+    public int PublisherId { get; set; }
+    public Publisher Publisher { get; set; }
+    
+    public int LanguageId { get; set; }
+    public Language Language { get; set; }
+    
+    public int CoverId { get; set; }
+    public Cover Cover { get; set; }
 }
