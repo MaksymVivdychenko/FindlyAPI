@@ -1,0 +1,15 @@
+﻿OfferController:
+get offers,
+filtration,
+adding liked offers to user,
+adding price to notification,
+remove liked offers,
+change price to notification,
+remove notification,
+
+UserController:
+reg user,
+auth user,
+Change password,
+Change login,
+JWT tokens
