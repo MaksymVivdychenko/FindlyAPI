@@ -15,6 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\FindlyBLL\FindlyBLL.csproj" />
       <ProjectReference Include="..\FindlyDAL\FindlyDAL.csproj" />
     </ItemGroup>
 

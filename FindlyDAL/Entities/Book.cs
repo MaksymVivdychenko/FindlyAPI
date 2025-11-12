@@ -13,12 +13,9 @@ public class Book : BaseEntity
     public List<Offer> Offers { get; set; }
     public List<Author> Authors { get; set; }
     
-    public int PublisherId { get; set; }
+    public Guid PublisherId { get; set; }
     public Publisher Publisher { get; set; }
     
-    public int LanguageId { get; set; }
-    public Language Language { get; set; }
-    
-    public int CoverId { get; set; }
+    public Guid CoverId { get; set; }
     public Cover Cover { get; set; }
 }

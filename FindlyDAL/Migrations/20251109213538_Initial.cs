@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -14,8 +15,7 @@ namespace FindlyDAL.Migrations
                 name: "Authors",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -27,8 +27,8 @@ namespace FindlyDAL.Migrations
                 name: "Cover",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1")
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -39,8 +39,7 @@ namespace FindlyDAL.Migrations
                 name: "Languages",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -52,8 +51,7 @@ namespace FindlyDAL.Migrations
                 name: "Publishers",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -65,11 +63,11 @@ namespace FindlyDAL.Migrations
                 name: "Shops",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ShopImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PriceNodePath = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ParserType = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -80,8 +78,7 @@ namespace FindlyDAL.Migrations
                 name: "users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Login = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
@@ -94,15 +91,14 @@ namespace FindlyDAL.Migrations
                 name: "books",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ISBN_13 = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: false),
                     Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PublisherId = table.Column<int>(type: "int", nullable: false),
-                    LanguageId = table.Column<int>(type: "int", nullable: false),
-                    CoverId = table.Column<int>(type: "int", nullable: false)
+                    PublisherId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LanguageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CoverId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -131,8 +127,8 @@ namespace FindlyDAL.Migrations
                 name: "authors_books",
                 columns: table => new
                 {
-                    authorId = table.Column<int>(type: "int", nullable: false),
-                    bookId = table.Column<int>(type: "int", nullable: false)
+                    authorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    bookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -155,12 +151,11 @@ namespace FindlyDAL.Migrations
                 name: "offers",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Link = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    ShopId = table.Column<int>(type: "int", nullable: false),
-                    BookId = table.Column<int>(type: "int", nullable: false)
+                    ShopId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BookId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -180,24 +175,25 @@ namespace FindlyDAL.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "user_liked_offers",
+                name: "UserLikedOffers",
                 columns: table => new
                 {
-                    userId = table.Column<int>(type: "int", nullable: false),
-                    offerId = table.Column<int>(type: "int", nullable: false)
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OfferId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PriceToNotify = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_user_liked_offers", x => new { x.userId, x.offerId });
+                    table.PrimaryKey("PK_UserLikedOffers", x => new { x.UserId, x.OfferId });
                     table.ForeignKey(
-                        name: "FK_user_liked_offers_offers_userId",
-                        column: x => x.userId,
+                        name: "FK_UserLikedOffers_offers_OfferId",
+                        column: x => x.OfferId,
                         principalTable: "offers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_user_liked_offers_users_offerId",
-                        column: x => x.offerId,
+                        name: "FK_UserLikedOffers_users_UserId",
+                        column: x => x.UserId,
                         principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -234,9 +230,9 @@ namespace FindlyDAL.Migrations
                 column: "ShopId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_user_liked_offers_offerId",
-                table: "user_liked_offers",
-                column: "offerId");
+                name: "IX_UserLikedOffers_OfferId",
+                table: "UserLikedOffers",
+                column: "OfferId");
         }
 
         /// <inheritdoc />
@@ -246,7 +242,7 @@ namespace FindlyDAL.Migrations
                 name: "authors_books");
 
             migrationBuilder.DropTable(
-                name: "user_liked_offers");
+                name: "UserLikedOffers");
 
             migrationBuilder.DropTable(
                 name: "Authors");

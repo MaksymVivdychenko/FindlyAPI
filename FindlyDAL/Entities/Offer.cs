@@ -6,9 +6,9 @@ public class Offer : BaseEntity
     public decimal Price { get; set; }
     
     public Shop Shop { get; set; }
-    public int ShopId { get; set; }
+    public Guid ShopId { get; set; }
     
     public Book Book { get; set; }
-    public int BookId { get; set; }
-    public List<User> Users { get; set; }
+    public Guid BookId { get; set; }
+    public List<UserLikedOffers> LikedOffers { get; set; }
 }

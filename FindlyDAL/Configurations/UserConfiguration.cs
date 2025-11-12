@@ -11,15 +11,6 @@ public class UserConfiguration : BaseConfiguration<User>
         base.Configure(builder);
         builder.ToTable("users");
         builder.HasMany(q => q.LikedOffers)
-            .WithMany(q => q.Users)
-            .UsingEntity(
-                "user_liked_offers",
-                u => u.HasOne(typeof(Offer))
-                    .WithMany()
-                    .HasForeignKey("userId"),
-                o => o.HasOne(typeof(User))
-                    .WithMany()
-                    .HasForeignKey("offerId"),
-                q => q.HasKey("userId" , "offerId"));
+            .WithOne(q => q.User).HasForeignKey(q => q.UserId);
     }
 }

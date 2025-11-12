@@ -1,3 +1,5 @@
+using FindlyBLL.Interfaces;
+using FindlyBLL.Services;
 using FindlyDAL.DB;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +11,7 @@ string pathToSharedAppsettings = Path.Combine(builder.Environment.ContentRootPat
 
 builder.Configuration.AddJsonFile(Path.GetFullPath(pathToSharedAppsettings), optional: false, reloadOnChange: true);
 builder.Services.AddControllers();
+builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddDbContext<FindlyDbContext>(
     options => options.UseSqlServer(builder.Configuration
         .GetConnectionString("FindlyDbConnectionString")));

@@ -12,7 +12,6 @@ public class FindlyDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Author> Authors { get; set; }
     public DbSet<Cover> Cover { get; set; }
-    public DbSet<Language> Languages { get; set; }
     public DbSet<Publisher> Publishers { get; set; }
 
     public FindlyDbContext(DbContextOptions<FindlyDbContext> options) : base(options)
