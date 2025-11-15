@@ -10,6 +10,7 @@ public class UserConfiguration : BaseConfiguration<User>
     {
         base.Configure(builder);
         builder.ToTable("users");
+        builder.HasIndex(q => q.Login).IsUnique();
         builder.HasMany(q => q.LikedOffers)
             .WithOne(q => q.User).HasForeignKey(q => q.UserId);
     }

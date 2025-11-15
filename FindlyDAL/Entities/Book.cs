@@ -8,7 +8,6 @@ public class Book : BaseEntity
 {
     public string ISBN_13 { get; set; }
     public string Title { get; set; }
-    public string? Description { get; set; }
     public string? ImageUrl { get; set; }
     public List<Offer> Offers { get; set; }
     public List<Author> Authors { get; set; }

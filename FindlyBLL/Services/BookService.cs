@@ -28,17 +28,17 @@ public class BookService : IBookService
                 book.Authors.Any(author => authors.Contains(author.Name)));
         }
 
-        if (!bookTitle.IsNullOrEmpty())
+        if (!String.IsNullOrEmpty(bookTitle))
         {
             query = query.Where(q => q.Title.ToLower() == bookTitle.ToLower());
         }
 
-        if (!cover.IsNullOrEmpty())
+        if (!String.IsNullOrEmpty(cover))
         {
             query = query.Where(q => q.Cover.Name.ToLower() == cover.ToLower());
         }
 
-        if (!publisher.IsNullOrEmpty())
+        if (!String.IsNullOrEmpty(publisher))
         {
             query = query.Where(q => q.Publisher.Title.ToLower() == publisher.ToLower());
         }
