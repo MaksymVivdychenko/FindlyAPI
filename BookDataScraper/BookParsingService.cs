@@ -25,14 +25,14 @@ public class BookParsingService
     /// Головний метод для парсингу та збереження книги.
     /// Перевіряє ISBN; якщо книга існує, пропускає створення.
     /// </summary>
-    public async Task<Book> ParseAndSaveBookAsync(HtmlDocument doc, BookSelectors selectors)
+    public async Task<Book?> ParseAndSaveBookAsync(HtmlDocument doc, BookSelectors selectors)
     {
         // --- 1. Пріоритетний парсинг та обробка ISBN ---
         string isbnRaw = GetSingleNodeText(doc.DocumentNode, selectors.IsbnXPath);
         string? isbnClean = isbnRaw?.Replace("-", "");
 
         // Якщо ISBN не знайдено на сторінці, ми не можемо продовжити
-        if (string.IsNullOrEmpty(isbnClean))
+        if (string.IsNullOrEmpty(isbnClean) || isbnClean.Contains(","))
         {
             // Або логування
             Console.WriteLine("Warning: ISBN not found on page. Skipping."); 
@@ -55,10 +55,19 @@ public class BookParsingService
         }
 
         // --- 4. Книга не існує. Продовжуємо парсинг (всіх інших полів) ---
-        string coverName = GetSingleNodeText(doc.DocumentNode, selectors.CoverXPath);
-        string publisherName = GetSingleNodeText(doc.DocumentNode, selectors.PublisherXPath);
-        string titleJson = GetSingleNodeText(doc.DocumentNode, selectors.TitleJsonXPath);
-        string imageUrl = GetSingleNodeText(doc.DocumentNode, selectors.ImagePathXPath);
+        string? coverName = GetSingleNodeText(doc.DocumentNode, selectors.CoverXPath);
+        string? publisherName = GetSingleNodeText(doc.DocumentNode, selectors.PublisherXPath);
+        string? titleJson = GetSingleNodeText(doc.DocumentNode, selectors.TitleJsonXPath);
+        if (coverName is null || publisherName is null || titleJson is null)
+        {
+            Console.WriteLine("Some of required data is missing, skipping");
+            return null;
+        }
+
+        if (publisherName == "Книжковий клуб \"Клуб Сімейного Дозвілля\"")
+        {
+            publisherName = "КСД";
+        }
 
         // --- 5. Обробка даних згідно з правилами ---
         string bookTitle = ParseTitleFromJson(titleJson);
@@ -74,6 +83,12 @@ public class BookParsingService
                 .Distinct() // Уникаємо дублікатів авторів на одній сторінці
                 .ToList();
         }
+        else
+        {
+            Console.WriteLine("Author data is missed. skipping");
+            return null;
+        }
+        
 
         // --- 7. Логіка бази даних: "Знайти або Створити" (для супутніх сутностей) ---
 
@@ -109,7 +124,7 @@ public class BookParsingService
         {
             ISBN_13 = isbnClean,
             Title = bookTitle,
-            ImageUrl = imageUrl,
+            ImageUrl = null,
             Publisher = publisher,
             Cover = cover,
             Authors = bookAuthors, // EF Core автоматично створить M-M зв'язки

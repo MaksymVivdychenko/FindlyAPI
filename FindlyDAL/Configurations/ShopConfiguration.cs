@@ -14,14 +14,15 @@ public class ShopConfiguration : BaseConfiguration<Shop>
         {
             new Shop 
             {
-                Id = Guid.NewGuid(),Name = "Yakaboo.ua",
+                Id = Guid.Parse("d985a44b-477e-476d-9387-b816c21190d0"),
+                Name = "Yakaboo.ua",
                 ParserType = ParserType.JsonLd,
                 PriceNodePath = "//script[@data-vmid=\"ProductJsonLd\"]",
                 ShopImageUrl = ""
             },
             new Shop 
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Parse("071e893b-bcda-4c3e-8721-d7205c348db5"),
                 Name = "ksd.ua", ParserType = ParserType.JsonLd,
                 PriceNodePath = "//script[@type='application/ld+json']",
                 ShopImageUrl = ""

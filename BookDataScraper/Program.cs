@@ -35,7 +35,7 @@ class Program
             IsbnXPath = "//p[@class='MuiTypography-root MuiTypography-subtitle1 mui-niuy0m-spec-name' and contains(., 'ISBN')]/../div",
             PublisherXPath =
                 "//p[@class='MuiTypography-root MuiTypography-subtitle1 mui-niuy0m-spec-name' and contains(., 'Видавництво')]/../a",
-            TitleJsonXPath = "script[type=\"application/ld+json\"",
+            TitleJsonXPath = "//script[@type=\"application/ld+json\"]",
         };
         HtmlWeb web = new HtmlWeb();
         web.OverrideEncoding = Encoding.UTF8;
@@ -47,28 +47,70 @@ class Program
         {
             if (!yakabooReader.EndOfStream)
             {
-                yakabooDoc = web.Load(yakabooReader.ReadLine() !);
+                string link = yakabooReader.ReadLine() !;
+                yakabooDoc = web.Load(link);
                 var yakabooBook = await parser.ParseAndSaveBookAsync(yakabooDoc, YakabooSelectors);
-                using var client = new HttpClient();
-                // 4. Асинхронно завантажуємо зображення як масив байтів
-                byte[] imageBytes = await client.GetByteArrayAsync(yakabooBook.ImageUrl);
-        
-                // 5. Асинхронно зберігаємо ці байти у файл
-                string destinationPath =  yakabooBook.Title + yakabooBook.ISBN_13 + "_image";
-                await File.WriteAllBytesAsync(destinationPath, imageBytes);
-        
-                // Виводимо повний шлях до збереженого файлу
-                Console.WriteLine($"Image successfully downloaded to: {Path.GetFullPath(destinationPath)}");
+                if (yakabooBook is not null)
+                {
+                    if (yakabooBook.ImageUrl is null)
+                    {
+                        try
+                        {
+                            yakabooBook.ImageUrl = string.Concat(yakabooDoc.DocumentNode.SelectNodes(YakabooSelectors.ImagePathXPath)[0].Attributes["src"].Value);
+                            await GetAndSaveImage(yakabooBook);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(yakabooBook.ImageUrl);
+                            Console.WriteLine(e);
+                        }
+                    }
+                    await db.Offers.AddAsync(new Offer { BookId = yakabooBook.Id, Link = link, ShopId = Guid.Parse("d985a44b-477e-476d-9387-b816c21190d0")});
+                    await db.SaveChangesAsync();
+                    Console.WriteLine("Yakaboo book saved");
+                }
             }
 
             if (!ksdReader.EndOfStream)
             {
-                ksdDoc = web.Load(yakabooReader.ReadLine() !);
+                string link = ksdReader.ReadLine() !;
+                ksdDoc = web.Load(link);
                 var ksdBook = await parser.ParseAndSaveBookAsync(ksdDoc, KSDSelectors);
+                if (ksdBook is not null)
+                {
+                    if (ksdBook.ImageUrl is null)
+                    {
+                        try
+                        {
+                            ksdBook.ImageUrl = string.Concat("https://ksd.ua",
+                                ksdDoc.DocumentNode.SelectNodes(KSDSelectors.ImagePathXPath)[0].Attributes["src"].Value);
+                            await GetAndSaveImage(ksdBook);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(ksdBook.ImageUrl);
+                            Console.WriteLine(e);
+                        }
+                    }
+                    await db.Offers.AddAsync(new Offer { BookId = ksdBook.Id, Link = link, ShopId = Guid.Parse("071e893b-bcda-4c3e-8721-d7205c348db5")});
+                    await db.SaveChangesAsync();
+                    Console.WriteLine("ksd book saved");
+                }
             }
-
             await Task.Delay(5000);
         }
+
+    }
+    public static async Task GetAndSaveImage(Book book)
+    {
+        using var client = new HttpClient();
+        byte[] imageBytes = await client.GetByteArrayAsync(book.ImageUrl);
+        string extension = Path.GetExtension(new Uri(book.ImageUrl !).AbsolutePath);
+        string newFileName = book.ISBN_13 + "_image" + extension;
+        string destinationFolder = "C:\\study\\5 sem\\CourseWork\\Findly\\FindlyAPI\\FindlyAPI\\wwwroot\\images\\";
+        string destinationPath = Path.Combine(destinationFolder, newFileName);
+        await File.WriteAllBytesAsync(destinationPath, imageBytes);
+        book.ImageUrl = "/images/" + newFileName;
     }
 }
 //Yakaboo parser data
