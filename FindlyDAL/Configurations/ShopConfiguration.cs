@@ -19,20 +19,6 @@ public class ShopConfiguration : BaseConfiguration<Shop>
                 PriceNodePath = "//script[@data-vmid=\"ProductJsonLd\"]",
                 ShopImageUrl = ""
             },
-            new Shop
-            {
-                Id = Guid.NewGuid(),
-                Name = "balka-book.com", ParserType = ParserType.JsonLd,
-                PriceNodePath = "//script[@type='application/ld+json']",
-                ShopImageUrl = ""
-            },
-            new Shop 
-            {
-                Id = Guid.NewGuid(),
-                Name = "book24.ua", ParserType = ParserType.Node,
-                PriceNodePath = "//div[@class='product-main']//span[@class='price_value']", 
-                ShopImageUrl = ""
-            },
             new Shop 
             {
                 Id = Guid.NewGuid(),
