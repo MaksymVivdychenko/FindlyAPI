@@ -37,7 +37,7 @@ public class Worker : BackgroundService
                     foreach (var offer in offers)
                     {
                         decimal offerNewPrice = Scrapper.GetPrice(offer.Link,
-                            offer.Shop.PriceNodePath, offer.Shop.ParserType);
+                            offer.Shop.JsonLdPath, offer.Shop.ParserType);
                         
                         
                     }

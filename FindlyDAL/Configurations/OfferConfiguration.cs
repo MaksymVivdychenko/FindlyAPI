@@ -9,7 +9,6 @@ public class OfferConfiguration : BaseConfiguration<Offer>
     public override void Configure(EntityTypeBuilder<Offer> builder)
     {
         base.Configure(builder);
-        builder.ToTable("offers");
         builder.HasOne(q => q.Book).WithMany(q => q.Offers).HasForeignKey(q => q.BookId);
         builder.HasOne(q => q.Shop).WithMany(q => q.Offers).HasForeignKey(q => q.ShopId);
     }

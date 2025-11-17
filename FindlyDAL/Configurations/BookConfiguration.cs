@@ -16,7 +16,7 @@ public class BookConfiguration : BaseConfiguration<Book>
             .WithMany(q => q.Books).HasForeignKey(q => q.PublisherId);
         builder.HasMany(q => q.Authors).WithMany(q => q.Books)
             .UsingEntity(
-                "authors_books",
+                "authorsBooks",
                 q => q.HasOne(typeof(Author)).WithMany().HasForeignKey("authorId"),
                 a => a.HasOne(typeof(Book)).WithMany().HasForeignKey("bookId"));
     }
