@@ -73,21 +73,23 @@ public class BookParsingService
         string bookTitle = ParseTitleFromJson(titleJson);
 
         // --- 6. Парсинг списку авторів ---
-        var authorNames = new List<string>();
-        var authorNodes = doc.DocumentNode.SelectNodes(selectors.AuthorsXPath);
-        if (authorNodes != null)
+        List<string> authorNames = new List<string>();
+        var authorNodes = doc.DocumentNode.SelectNodes(selectors.AuthorXPath);
+        if (authorNodes == null)
         {
-            authorNames = authorNodes
-                .Select(node => node.InnerText.Trim())
-                .Where(name => !string.IsNullOrEmpty(name))
-                .Distinct() // Уникаємо дублікатів авторів на одній сторінці
-                .ToList();
+             authorNodes = doc.DocumentNode.SelectNodes(selectors.AuthorsXPath);
         }
-        else
+        if (authorNodes == null)
         {
             Console.WriteLine("Author data is missed. skipping");
             return null;
         }
+        
+        authorNames = authorNodes
+            .Select(node => node.InnerText.Trim())
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Distinct() // Уникаємо дублікатів авторів на одній сторінці
+            .ToList();
         
 
         // --- 7. Логіка бази даних: "Знайти або Створити" (для супутніх сутностей) ---
@@ -226,6 +228,7 @@ public class BookParsingService
 
 public class BookSelectors
 {
+    public string AuthorXPath { get; set; }
     public string AuthorsXPath { get; set; }
     public string CoverXPath { get; set; }
     public string PublisherXPath { get; set; }

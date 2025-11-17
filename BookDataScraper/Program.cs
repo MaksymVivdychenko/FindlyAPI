@@ -17,7 +17,8 @@ class Program
 
         BookSelectors YakabooSelectors = new BookSelectors()
         {
-            AuthorsXPath = "//div[@class='char__title' and contains(., 'Автор')]/../div[@class='char__value']//a//span",
+            AuthorXPath = "//div[@class='char__title' and contains(., 'Автор')]/../div[@class='char__value']//a//span[1]",
+            AuthorsXPath = "//div[@class='char__title' and contains(., 'Автор')]/../div[@class='char__value']//a//span[1]",
             CoverXPath =
                 "//div[@class='char__title' and contains(., 'Тип обкладинки')]/../div[@class='char__value']//span//span",
             ImagePathXPath = "//div[@class='image-container']/img",
@@ -28,7 +29,8 @@ class Program
         };
         BookSelectors KSDSelectors = new BookSelectors()
         {
-            AuthorsXPath = "//p[@class='MuiTypography-root MuiTypography-subtitle1 mui-niuy0m-spec-name' and contains(., 'Автор')]/../div/a",
+            AuthorXPath = "//p[@class='MuiTypography-root MuiTypography-subtitle1 mui-niuy0m-spec-name' and contains(., 'Автор')]/../div/a",
+            AuthorsXPath = "//p[@class='MuiTypography-root MuiTypography-subtitle1 mui-niuy0m-spec-name' and contains(., 'Автор')]/../div/div",
             CoverXPath =
                 "//p[@class='MuiTypography-root MuiTypography-subtitle1 mui-niuy0m-spec-name' and contains(., 'Обкладинка')]/../div",
             ImagePathXPath = "//div[@class='mui-1n73pgb-product-image__image-container']//img",
