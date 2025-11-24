@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FindlyAPI.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/books")]
 [ApiController]
 public class BookController : ControllerBase
 {
@@ -20,7 +20,7 @@ public class BookController : ControllerBase
         [FromQuery] List<string>? author, [FromQuery] string? publisher,
         [FromQuery] string? cover)
     {
-        var books = _bookService.GetAllBooks(author, title, cover, publisher);
+        var books = await _bookService.GetAllBooks(author, title, cover, publisher);
         return Ok(books);
     }
 }

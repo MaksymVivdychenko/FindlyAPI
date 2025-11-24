@@ -16,7 +16,7 @@ public class BookService : IBookService
         _context = context;
     }
 
-    public List<BookGetDto> GetAllBooks(List<string>? authors, string? bookTitle, string? cover, string? publisher)
+    public async Task<List<BookGetDto>> GetAllBooks(List<string>? authors, string? bookTitle, string? cover, string? publisher)
     {
         IQueryable<Book> query = _context.Books
             .Include(q => q.Authors)
@@ -30,7 +30,7 @@ public class BookService : IBookService
 
         if (!String.IsNullOrEmpty(bookTitle))
         {
-            query = query.Where(q => q.Title.ToLower() == bookTitle.ToLower());
+            query = query.Where(q => q.Title.ToLower().Contains(bookTitle.ToLower()));
         }
 
         if (!String.IsNullOrEmpty(cover))
@@ -43,13 +43,14 @@ public class BookService : IBookService
             query = query.Where(q => q.Publisher.Title.ToLower() == publisher.ToLower());
         }
 
-        return query.Select(q => new BookGetDto
+        return await query.Select(q => new BookGetDto
         {
+            Id = q.Id,
             Cover = q.Cover.Name,
             Publisher = q.Publisher.Title,
             Title = q.Title,
             Author = q.Authors.Select(a => a.Name).ToList(),
         })
-        .ToList();
+        .ToListAsync();
     }
 }

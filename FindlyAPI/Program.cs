@@ -12,6 +12,9 @@ string pathToSharedAppsettings = Path.Combine(builder.Environment.ContentRootPat
 builder.Configuration.AddJsonFile(Path.GetFullPath(pathToSharedAppsettings), optional: false, reloadOnChange: true);
 builder.Services.AddControllers();
 builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<IOfferService, OfferService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddDbContext<FindlyDbContext>(
     options => options.UseSqlServer(builder.Configuration
         .GetConnectionString("FindlyDbConnectionString")));

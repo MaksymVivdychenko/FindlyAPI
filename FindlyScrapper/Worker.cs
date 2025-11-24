@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using FindlyDAL.DB;
 using FindlyDAL.Entities;
+using FindlyDAL.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace FindlyScrapper;
@@ -37,7 +38,7 @@ public class Worker : BackgroundService
                     foreach (var offer in offers)
                     {
                         decimal offerNewPrice = Scrapper.GetPrice(offer.Link,
-                            offer.Shop.JsonLdPath, offer.Shop.ParserType);
+                            offer.Shop.JsonLdPath, ParserType.JsonLd);
                         
                         
                     }

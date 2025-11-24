@@ -1,7 +1,9 @@
 ﻿using System.Xml;
+using FindlyBLL.DTOs;
 using FindlyBLL.Interfaces;
 using FindlyDAL.DB;
 using FindlyDAL.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace FindlyBLL.Services;
 
@@ -14,35 +16,49 @@ public class OfferService : IOfferService
         _context = context;
     }
 
-    public List<Offer> GetOffersByBookId(Guid bookId)
+    public async Task<List<OfferGetDto>> GetOffersByBookId(Guid bookId)
     {
-        return _context.Offers.Where(q => q.BookId == bookId).ToList();
+        return await _context.Offers.Include(q => q.Shop).Where(q => q.BookId == bookId).Select(q => new OfferGetDto
+        {
+            Id = q.Id,
+            Link = q.Link,
+            Price = q.Price,
+            ShopName = q.Shop.Name,
+        }).ToListAsync();
     }
 
-    public void AddOfferToFavorite(Guid userId, Guid offerId)
+    public async Task AddOfferToFavorite(Guid userId, Guid offerId)
     {
-        var offer = _context.Offers.Find(offerId);
-        var user = _context.Users.Find(userId) !;
+        var offer = await _context.Offers.FindAsync(offerId);
+        if (offer == null)
+        {
+            throw new Exception("offer doesn't exist");
+        }
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            throw new Exception("user doesn't exist");
+        }
         UserLikedOffers likedOffer = new UserLikedOffers { OfferId = offerId, UserId = userId };
-        user.LikedOffers.Add(likedOffer);
-        _context.SaveChanges();
+        await _context.UserLikedOffers.AddAsync(likedOffer);
+        await _context.SaveChangesAsync();
     }
 
-    public void RemoveOfferFromFavorite(Guid userId, Guid offerId)
+    public async Task RemoveOfferFromFavorite(Guid userId, Guid offerId)
     {
-        var likedOffer = _context.UserLikedOffers.Find(userId, offerId) !;
-        _context.UserLikedOffers.Remove(likedOffer);
-        _context.SaveChanges();
+        var likedOffer = await _context.UserLikedOffers.FindAsync(userId, offerId) !;
+        _context.UserLikedOffers.Remove(likedOffer!);
+        await _context.SaveChangesAsync();
     }
 
-    public void AddPriceToNotify(Guid userId, Guid offerId, decimal price)
+    public async Task AddPriceToNotify(Guid userId, Guid offerId, decimal price)
     {
-        var likedOffer = _context.UserLikedOffers.Find(userId, offerId) !;
-        likedOffer.PriceToNotify = price;
-        _context.SaveChanges();
+        var likedOffer = await _context.UserLikedOffers.FindAsync(userId, offerId) !;
+        likedOffer!.PriceToNotify = price;
+        await _context.SaveChangesAsync();
     }
 
-    public void RemoveNotify(Guid userId, Guid offerId, decimal price)
+    public async Task RemoveNotify(Guid userId, Guid offerId, decimal price)
     {
         throw new NotImplementedException();
     }

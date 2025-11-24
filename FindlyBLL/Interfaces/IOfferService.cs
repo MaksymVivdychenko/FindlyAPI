@@ -1,12 +1,13 @@
-﻿using FindlyDAL.Entities;
+﻿using FindlyBLL.DTOs;
+using FindlyDAL.Entities;
 
 namespace FindlyBLL.Interfaces;
 
 public interface IOfferService
 {
-    List<Offer> GetOffersByBookId(Guid bookId);
-    void AddOfferToFavorite(Guid userId, Guid offerId);
-    void RemoveOfferFromFavorite(Guid userId, Guid offerId);
-    void AddPriceToNotify(Guid userId, Guid offerId, decimal price);
-    void RemoveNotify(Guid userId, Guid offerId, decimal price);
+    Task<List<OfferGetDto>> GetOffersByBookId(Guid bookId);
+    Task AddOfferToFavorite(Guid userId, Guid offerId);
+    Task RemoveOfferFromFavorite(Guid userId, Guid offerId);
+    Task AddPriceToNotify(Guid userId, Guid offerId, decimal price);
+    Task RemoveNotify(Guid userId, Guid offerId, decimal price);
 }
