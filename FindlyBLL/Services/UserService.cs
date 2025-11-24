@@ -1,9 +1,13 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using AutoMapper;
 using FindlyBLL.DTOs;
+using FindlyBLL.DTOs.UserDtos;
+using FindlyBLL.Interfaces;
 using FindlyDAL.DB;
 using FindlyDAL.Entities;
+using FindlyDAL.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -15,49 +19,77 @@ public class UserService : IUserService
 {
     private readonly IPasswordHasher _hasher;
     private readonly FindlyDbContext _context;
+    private readonly IUserRepository _userRepo;
     private readonly IConfiguration _configuration;
+    private readonly IMapper _mapper;
 
-    public UserService(IPasswordHasher hasher, FindlyDbContext context, IConfiguration configuration)
+    public UserService(IPasswordHasher hasher, FindlyDbContext context,
+        IUserRepository userRepo , IConfiguration configuration, IMapper mapper)
     {
         _hasher = hasher;
         _context = context;
+        _userRepo = userRepo;
         _configuration = configuration;
+        _mapper = mapper;
     }
 
-    public async Task<Guid> RegisterUser(UserRegDto user)
+    public async Task<AuthResponse> RegisterUser(RegisterUserDto registerUser)
     {
-        if (await IsLoginExist(user.Login))
+        if (await _userRepo.IsLoginNotUnique(registerUser.Login))
         {
             throw new Exception("Invalid login");
         }
         
-        var userEnitity = new User { Login = user.Login, PasswordHash = _hasher.HashPassword(user.Password) };
-        await _context.Users.AddAsync(userEnitity);
+        var userEntity = new User { Login = registerUser.Login, PasswordHash = _hasher.HashPassword(registerUser.Password) };
+        await _userRepo.AddAsync(userEntity);
         await _context.SaveChangesAsync();
-        return userEnitity.Id;
+        return new AuthResponse
+        {
+            Login = userEntity.Login,
+            Token = GenerateJwt(userEntity),
+            UserId = userEntity.Id,
+        };
     }
-    
-    public async Task<Guid> LoginUser(UserRegDto user)
+
+    public async Task<AuthResponse> LoginUser(LoginUserDto registerUser)
     {
-        var userEntity = await _context.Users.SingleOrDefaultAsync(q => q.Login == user.Login);
+        var userEntity = (await _userRepo.FindAsync(q => q.Login == registerUser.Login)).FirstOrDefault();
         if(userEntity is null)
         {
             throw new Exception("Incorrect login or password");
         }
-        if (!_hasher.VerifyPassword(user.Password, userEntity.PasswordHash))
+        if (!_hasher.VerifyPassword(registerUser.Password, userEntity.PasswordHash))
         {
             throw new Exception("Incorrect login or password");
         }
 
-        return userEntity.Id;
+        return new AuthResponse
+        {
+            Login = userEntity.Login,
+            Token = GenerateJwt(userEntity),
+            UserId = userEntity.Id,
+        };
     }
-
-    private async Task<bool> IsLoginExist(string login)
+    
+    public async Task<bool> ChangePassword(Guid userId ,UserChangePasswordDto passwords)
     {
-        return await _context.Users.AnyAsync(q => q.Login == login);
-    }
+        var user = await _userRepo.GetByIdAsync(userId);
+        if(user is null)
+        {
+            throw new Exception("user doesn't exist");
+        }
 
-    private string GenerateJWT(User user)
+        if (!_hasher.VerifyPassword(passwords.OldPassword, user.PasswordHash))
+        {
+            throw new Exception("Incorrect password");
+        }
+
+        user.PasswordHash = _hasher.HashPassword(passwords.NewPassword);
+        await _userRepo.UpdateAsync(user);
+        return true;
+    }
+    
+    private string GenerateJwt(User user)
     {
         var jwtSettings = _configuration.GetSection("jwt");
         var secretKey = jwtSettings["Key"] !;

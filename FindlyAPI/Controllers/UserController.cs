@@ -1,5 +1,9 @@
-﻿using FindlyBLL.DTOs;
+﻿using System.Security.Claims;
+using FindlyBLL.DTOs;
+using FindlyBLL.DTOs.UserDtos;
+using FindlyBLL.Interfaces;
 using FindlyBLL.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FindlyAPI.Controllers;
@@ -14,17 +18,37 @@ public class UserController : ControllerBase
         _userService = userService;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> RegisterUser([FromBody] UserRegDto user)
+    [HttpPost("register")]
+    public async Task<IActionResult> RegisterUser([FromBody] RegisterUserDto registerUser)
     {
-        var id = await _userService.RegisterUser(user);
-        return Ok(id);
+        var response = await _userService.RegisterUser(registerUser);
+        return Ok(response);
     }
 
-    [HttpPost("login/")]
-    public async Task<IActionResult> LoginUser([FromBody] UserRegDto user)
+    [HttpPost("login")]
+    public async Task<IActionResult> LoginUser([FromBody] LoginUserDto loginUser)
     {
-        var id = await _userService.LoginUser(user);
-        return Ok(id);
+        var response = await _userService.LoginUser(loginUser);
+        return Ok(response);
+    }
+    
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] UserChangePasswordDto dto)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null) return Unauthorized();
+
+        var userId = Guid.Parse(userIdClaim.Value);
+
+        try
+        {
+            await _userService.ChangePassword(userId, dto);
+            return Ok(new { message = "Пароль успішно змінено" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

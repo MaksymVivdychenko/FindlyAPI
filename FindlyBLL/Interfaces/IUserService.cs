@@ -1,9 +1,10 @@
-﻿using FindlyBLL.DTOs;
+﻿using FindlyBLL.DTOs.UserDtos;
 
-namespace FindlyBLL.Services;
+namespace FindlyBLL.Interfaces;
 
 public interface IUserService
 {
-    Task<Guid> RegisterUser(UserRegDto user);
-    Task<Guid> LoginUser(UserRegDto user);
+    Task<AuthResponse> RegisterUser(RegisterUserDto registerUser);
+    Task<AuthResponse> LoginUser(LoginUserDto registerUser);
+    Task<bool> ChangePassword(Guid userId ,UserChangePasswordDto passwords);
 }

@@ -1,6 +1,6 @@
-﻿namespace FindlyBLL.DTOs;
+﻿namespace FindlyBLL.DTOs.UserDtos;
 
-public class UserRegDto
+public class RegisterUserDto
 {
     public string Login { get; set; }
     public string  Password { get; set; }
