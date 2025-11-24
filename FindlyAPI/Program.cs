@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text;
+using FindlyBLL.AutoMapperProfiles;
 using FindlyBLL.Interfaces;
 using FindlyBLL.Services;
 using FindlyDAL.DB;
@@ -18,17 +19,18 @@ string pathToSharedAppsettings = Path.Combine(builder.Environment.ContentRootPat
 
 builder.Configuration.AddJsonFile(Path.GetFullPath(pathToSharedAppsettings), optional: false, reloadOnChange: true);
 builder.Services.AddControllers();
-builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IOfferService, OfferService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddDbContext<FindlyDbContext>(
     options => options.UseSqlServer(builder.Configuration
         .GetConnectionString("FindlyDbConnectionString")));
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddAutoMapper(Assembly.GetAssembly(typeof(Program)));
+builder.Services.AddAutoMapper(Assembly.GetAssembly(typeof(AutoMapperProfile)));
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {

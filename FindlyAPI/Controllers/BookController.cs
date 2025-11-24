@@ -1,26 +1,39 @@
 ﻿using FindlyBLL.DTOs;
+using FindlyBLL.DTOs.CatalogDtos;
 using FindlyBLL.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FindlyAPI.Controllers;
 
-[Route("api/books")]
+[Route("api/[controller]")]
 [ApiController]
-public class BookController : ControllerBase
+public class CatalogController : ControllerBase
 {
-    private readonly IBookService _bookService;
+    private readonly ICatalogService _catalogService;
 
-    public BookController(IBookService bookService)
+    public CatalogController(ICatalogService catalogService)
     {
-        _bookService = bookService;
+        _catalogService = catalogService;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAllAsync([FromQuery] string? title,
-        [FromQuery] List<string>? author, [FromQuery] string? publisher,
-        [FromQuery] string? cover)
+    [HttpGet("books")]
+    public async Task<IActionResult> GetAllBooksAsync([FromQuery] BookFilterDto bookFilterDto)
     {
-        var books = await _bookService.GetAllBooks(author, title, cover, publisher);
+        var books = await _catalogService.GetAllBooks(bookFilterDto);
         return Ok(books);
+    }
+    
+    [HttpGet("covers")]
+    public async Task<IActionResult> GetAllCoversAsync()
+    {
+        var covers = await _catalogService.GetAllCovers();
+        return Ok(covers);
+    }
+    
+    [HttpGet("publishers")]
+    public async Task<IActionResult> GetAllPublishersAsync()
+    {
+        var publishers = await _catalogService.GetAllPublishers();
+        return Ok(publishers);
     }
 }
