@@ -27,7 +27,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<IOfferRepository, OfferRepository>();
-builder.Services.AddScoped<IRepository<UserLikedOffers>, Repository<UserLikedOffers>>();
+builder.Services.AddScoped<ILikedOfferRepository, LikedOfferRepository>();
 builder.Services.AddDbContext<FindlyDbContext>(
     options => options.UseSqlServer(builder.Configuration
         .GetConnectionString("FindlyDbConnectionString")));

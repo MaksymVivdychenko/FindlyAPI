@@ -24,9 +24,9 @@ public class AutoMapperProfile : Profile
             .ForMember(dest => dest.Publisher, opt =>
                 opt.MapFrom(src => src.Publisher.Title))
             .ForMember(dest => dest.MinPrice, opt =>
-                opt.MapFrom(src => src.Offers.Min(q => q.Price)))
+                opt.MapFrom(src => src.Offers.Any() ? src.Offers.Min(q => q.Price) : 0))
             .ForMember(dest => dest.MaxPrice, opt =>
-                opt.MapFrom(src => src.Offers.Max(q => q.Price)))
+                opt.MapFrom(src => src.Offers.Any() ? src.Offers.Max(q => q.Price) : 0))
             .ForMember(dest => dest.IsAvailable, opt =>
             opt.MapFrom(src => src.Offers.Any(q => q.IsAvailable)));
 
@@ -35,5 +35,21 @@ public class AutoMapperProfile : Profile
                 opt.MapFrom(src => src.Shop.Name))
             .ForMember(dest => dest.ShopLogoUrl, opt =>
                 opt.MapFrom(src => src.Shop.ShopImageUrl));
+
+        CreateMap<UserLikedOffers, LikedOfferDto>()
+            .ForMember(dest => dest.BookTitle, opt =>
+                opt.MapFrom(src => src.Offer.Book.Title))
+            .ForMember(dest => dest.BookImageUrl, opt =>
+                opt.MapFrom(src => src.Offer.Book.ImageUrl))
+            .ForMember(dest => dest.Authors, opt =>
+                opt.MapFrom(src => src.Offer.Book.Authors.Select(q => q.Name)))
+            .ForMember(dest => dest.ShopName, opt =>
+                opt.MapFrom(src => src.Offer.Shop.Name))
+            .ForMember(dest => dest.Link, opt =>
+                opt.MapFrom(src => src.Offer.Link))
+            .ForMember(dest => dest.CurrentPrice, opt =>
+                opt.MapFrom(src => src.Offer.Price))
+            .ForMember(dest => dest.IsNotifySet, opt =>
+                opt.MapFrom(src => src.PriceToNotify != null));
     }
 }

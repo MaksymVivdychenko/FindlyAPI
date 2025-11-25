@@ -14,13 +14,13 @@ namespace FindlyBLL.Services;
 public class OfferService : IOfferService
 {
     private readonly IOfferRepository _offerRepo;
-    private readonly IRepository<UserLikedOffers> _likedOfferRepo;
+    private readonly ILikedOfferRepository _likedOfferRepo;
     private readonly IMapper _mapper;
     private readonly IBookRepository _bookRepo;
     private readonly IUserRepository _userRepo;
 
     public OfferService(IOfferRepository offerRepo,
-        IRepository<UserLikedOffers> likedOfferRepo, IMapper mapper, IBookRepository bookRepo,
+        ILikedOfferRepository likedOfferRepo, IMapper mapper, IBookRepository bookRepo,
         IUserRepository userRepo)
     {
         _offerRepo = offerRepo;
@@ -97,5 +97,15 @@ public class OfferService : IOfferService
                                                                 q.OfferId == offerId)).FirstOrDefault() !;
         likedOffer!.PriceToNotify = null;
         await _likedOfferRepo.UpdateAsync(likedOffer);
+    }
+
+    public async Task<List<LikedOfferDto>> GetLikedOfferForUser(Guid userId)
+    {
+        if ((await _userRepo.GetByIdAsync(userId)) == null)
+        {
+            throw new Exception("User doesn't exist");
+        }
+        var likedOffers = (await _likedOfferRepo.GetLikedOffersByUserId(userId)).ToList();
+        return _mapper.Map<List<LikedOfferDto>>(likedOffers);
     }
 }

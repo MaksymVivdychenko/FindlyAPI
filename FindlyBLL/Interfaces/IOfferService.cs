@@ -11,4 +11,6 @@ public interface IOfferService
     Task RemoveOfferFromFavorite(Guid userId, Guid offerId);
     Task AddPriceToNotify(Guid userId, Guid offerId, decimal price);
     Task RemoveNotify(Guid userId, Guid offerId);
+    Task<List<LikedOfferDto>> GetLikedOfferForUser(Guid userId);
+
 }
