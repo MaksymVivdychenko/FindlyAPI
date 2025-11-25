@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using FindlyBLL.DTOs.CatalogDtos;
+using FindlyBLL.DTOs.OffersDto;
 using FindlyBLL.DTOs.UserDtos;
 using FindlyDAL.Entities;
 
@@ -28,5 +29,11 @@ public class AutoMapperProfile : Profile
                 opt.MapFrom(src => src.Offers.Max(q => q.Price)))
             .ForMember(dest => dest.IsAvailable, opt =>
             opt.MapFrom(src => src.Offers.Any(q => q.IsAvailable)));
+
+        CreateMap<Offer, OfferDto>()
+            .ForMember(dest => dest.ShopName, opt =>
+                opt.MapFrom(src => src.Shop.Name))
+            .ForMember(dest => dest.ShopLogoUrl, opt =>
+                opt.MapFrom(src => src.Shop.ShopImageUrl));
     }
 }

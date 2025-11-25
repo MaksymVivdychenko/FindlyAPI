@@ -37,7 +37,8 @@ public class CatalogService : ICatalogService
     {
         var booksEntity =  (await _bookRepository.FindBooksByData(bookFilterDto.Title,
             bookFilterDto.CoverId, bookFilterDto.PublisherId,
-            bookFilterDto.Author, bookFilterDto.PageSize, bookFilterDto.PageNumber, bookFilterDto.IsAvailable)).ToList();
+            bookFilterDto.Author, bookFilterDto.PageSize,
+            bookFilterDto.PageNumber, bookFilterDto.IsAvailable)).ToList();
         return _mapper.Map<List<BookGetDto>>(booksEntity);
     }
 }

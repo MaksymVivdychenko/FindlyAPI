@@ -1,65 +1,101 @@
-﻿using System.Xml;
+﻿using System.Runtime.InteropServices.JavaScript;
+using System.Xml;
+using AutoMapper;
 using FindlyBLL.DTOs;
+using FindlyBLL.DTOs.OffersDto;
 using FindlyBLL.Interfaces;
 using FindlyDAL.DB;
 using FindlyDAL.Entities;
+using FindlyDAL.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace FindlyBLL.Services;
 
 public class OfferService : IOfferService
 {
-    private readonly FindlyDbContext _context;
+    private readonly IOfferRepository _offerRepo;
+    private readonly IRepository<UserLikedOffers> _likedOfferRepo;
+    private readonly IMapper _mapper;
+    private readonly IBookRepository _bookRepo;
+    private readonly IUserRepository _userRepo;
 
-    public OfferService(FindlyDbContext context)
+    public OfferService(IOfferRepository offerRepo,
+        IRepository<UserLikedOffers> likedOfferRepo, IMapper mapper, IBookRepository bookRepo,
+        IUserRepository userRepo)
     {
-        _context = context;
+        _offerRepo = offerRepo;
+        _likedOfferRepo = likedOfferRepo;
+        _mapper = mapper;
+        _bookRepo = bookRepo;
+        _userRepo = userRepo;
     }
 
-    public async Task<List<OfferGetDto>> GetOffersByBookId(Guid bookId)
+    public async Task<List<OfferDto>> GetOffersByBookId(Guid bookId, Guid? userId)
     {
-        return await _context.Offers.Include(q => q.Shop).Where(q => q.BookId == bookId).Select(q => new OfferGetDto
+        if (await _bookRepo.GetByIdAsync(bookId) == null)
         {
-            Id = q.Id,
-            Link = q.Link,
-            Price = q.Price,
-            ShopName = q.Shop.Name,
-        }).ToListAsync();
+            throw new Exception("book doesn't exist");
+        }
+        var offers = await _offerRepo.GetOffersForBook(bookId);
+        List<OfferDto> offersDto = _mapper.Map<List<OfferDto>>(offers);
+        if (userId == null)
+        {
+            return offersDto;
+        }
+        var offerIds = offersDto.Select(o => o.Id).ToList();
+        var likedOffers = await _likedOfferRepo.FindAsync(q => 
+            q.UserId == userId && offerIds.Contains(q.OfferId));
+        var likedOffersDict = likedOffers.ToDictionary(lo => lo.OfferId);
+        foreach (var offerDto in offersDto)
+        {
+            if (likedOffersDict.TryGetValue(offerDto.Id, out var likedOffer))
+            {
+                offerDto.IsLiked = true;
+                if (likedOffer.PriceToNotify != null)
+                {
+                    offerDto.IsPriceSet = true;
+                }
+            }
+        }
+        return offersDto;
     }
 
     public async Task AddOfferToFavorite(Guid userId, Guid offerId)
     {
-        var offer = await _context.Offers.FindAsync(offerId);
+        var offer = await _offerRepo.GetByIdAsync(offerId);
         if (offer == null)
         {
             throw new Exception("offer doesn't exist");
         }
-        var user = await _context.Users.FindAsync(userId);
+        var user = await _userRepo.GetByIdAsync(userId);
         if (user == null)
         {
             throw new Exception("user doesn't exist");
         }
         UserLikedOffers likedOffer = new UserLikedOffers { OfferId = offerId, UserId = userId };
-        await _context.UserLikedOffers.AddAsync(likedOffer);
-        await _context.SaveChangesAsync();
+        await _likedOfferRepo.AddAsync(likedOffer);
     }
 
     public async Task RemoveOfferFromFavorite(Guid userId, Guid offerId)
     {
-        var likedOffer = await _context.UserLikedOffers.FindAsync(userId, offerId) !;
-        _context.UserLikedOffers.Remove(likedOffer!);
-        await _context.SaveChangesAsync();
+        var likedOffer = (await _likedOfferRepo.FindAsync(q =>  q.UserId == userId &&
+                                                               q.OfferId == offerId)).FirstOrDefault() !;
+        await _likedOfferRepo.DeleteAsync(likedOffer);
     }
 
     public async Task AddPriceToNotify(Guid userId, Guid offerId, decimal price)
     {
-        var likedOffer = await _context.UserLikedOffers.FindAsync(userId, offerId) !;
+        var likedOffer = (await _likedOfferRepo.FindAsync(q =>  q.UserId == userId &&
+                                                                q.OfferId == offerId)).FirstOrDefault() !;
         likedOffer!.PriceToNotify = price;
-        await _context.SaveChangesAsync();
+        await _likedOfferRepo.UpdateAsync(likedOffer);
     }
 
-    public async Task RemoveNotify(Guid userId, Guid offerId, decimal price)
+    public async Task RemoveNotify(Guid userId, Guid offerId)
     {
-        throw new NotImplementedException();
+        var likedOffer = (await _likedOfferRepo.FindAsync(q =>  q.UserId == userId &&
+                                                                q.OfferId == offerId)).FirstOrDefault() !;
+        likedOffer!.PriceToNotify = null;
+        await _likedOfferRepo.UpdateAsync(likedOffer);
     }
 }

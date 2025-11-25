@@ -4,6 +4,7 @@ using FindlyBLL.AutoMapperProfiles;
 using FindlyBLL.Interfaces;
 using FindlyBLL.Services;
 using FindlyDAL.DB;
+using FindlyDAL.Entities;
 using FindlyDAL.Interfaces;
 using FindlyDAL.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -25,6 +26,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IBookRepository, BookRepository>();
+builder.Services.AddScoped<IOfferRepository, OfferRepository>();
+builder.Services.AddScoped<IRepository<UserLikedOffers>, Repository<UserLikedOffers>>();
 builder.Services.AddDbContext<FindlyDbContext>(
     options => options.UseSqlServer(builder.Configuration
         .GetConnectionString("FindlyDbConnectionString")));
