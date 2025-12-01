@@ -21,15 +21,18 @@ public class UserService : IUserService
     private readonly FindlyDbContext _context;
     private readonly IUserRepository _userRepo;
     private readonly IConfiguration _configuration;
+    private readonly IUserDevicesRepository _userDevicesRepo;
     private readonly IMapper _mapper;
 
     public UserService(IPasswordHasher hasher, FindlyDbContext context,
-        IUserRepository userRepo , IConfiguration configuration, IMapper mapper)
+        IUserRepository userRepo , IConfiguration configuration,
+        IUserDevicesRepository userDevicesRepo,IMapper mapper)
     {
         _hasher = hasher;
         _context = context;
         _userRepo = userRepo;
         _configuration = configuration;
+        _userDevicesRepo = userDevicesRepo;
         _mapper = mapper;
     }
 
@@ -42,7 +45,7 @@ public class UserService : IUserService
         
         var userEntity = new User { Login = registerUser.Login, PasswordHash = _hasher.HashPassword(registerUser.Password) };
         await _userRepo.AddAsync(userEntity);
-        await _context.SaveChangesAsync();
+        await _userDevicesRepo.AddDeviceToUser(userEntity.Id, registerUser.DeviceToken);
         return new AuthResponse
         {
             Login = userEntity.Login,
@@ -62,7 +65,7 @@ public class UserService : IUserService
         {
             throw new Exception("Incorrect login or password");
         }
-
+        await _userDevicesRepo.AddDeviceToUser(userEntity.Id, registerUser.DeviceToken);
         return new AuthResponse
         {
             Login = userEntity.Login,

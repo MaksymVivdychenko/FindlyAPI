@@ -6,6 +6,7 @@ namespace FindlyDAL.DB;
 
 public class FindlyDbContext : DbContext
 {
+    public DbSet<UserDevices> UserDevices { get; set; }
     public DbSet<Book> Books { get; set; }
     public DbSet<Shop> Shops { get; set; }
     public DbSet<Offer> Offers { get; set; }

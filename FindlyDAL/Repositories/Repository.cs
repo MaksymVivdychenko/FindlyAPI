@@ -45,4 +45,9 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
     {
         return await DbContext.Set<TEntity>().Where(predicate).AsNoTracking().ToListAsync();
     }
+
+    public async Task<TEntity?> FindSingleAsync(Expression<Func<TEntity, bool>> predicate)
+    {
+        return await DbContext.Set<TEntity>().SingleOrDefaultAsync(predicate);
+    }
 }
