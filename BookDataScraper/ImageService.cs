@@ -1,14 +1,18 @@
-﻿namespace BookDataScraper;
+﻿using System.Net;
+
+namespace BookDataScraper;
 
 public class ImageService
 {
     private readonly HttpClient _httpClient;
-    // Шлях краще брати з конфігурації appsettings.json, але для прикладу - константа
-    private const string BaseStoragePath = @"C:\study\5 sem\CourseWork\Findly\FindlyAPI\FindlyAPI\wwwroot\images\";
+    private readonly string _storagePath;
 
-    public ImageService()
+    public ImageService(string storagePath)
     {
         _httpClient = new HttpClient();
+        // Встановлюємо User-Agent, щоб сайти не блокували запити на картинки
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        _storagePath = storagePath;
     }
 
     public async Task<string?> DownloadAndSaveImageAsync(string imageUrl, string isbn)
@@ -17,31 +21,25 @@ public class ImageService
 
         try
         {
-            // Нормалізація URL (додавання хоста для KSD, якщо треба)
-            if (!imageUrl.StartsWith("http"))
-            {
-                // Тут можна додати логіку визначення хоста, або передавати повний URL
-                // Для простоти припускаємо, що парсер вже повернув повний URL, 
-                // або обробляємо це на рівні парсера.
-            }
-
             var imageBytes = await _httpClient.GetByteArrayAsync(imageUrl);
-            var extension = Path.GetExtension(new Uri(imageUrl).AbsolutePath);
             
-            // Генеруємо ім'я файлу
-            var newFileName = $"{isbn}_image{extension}";
-            var fullPath = Path.Combine(BaseStoragePath, newFileName);
+            // Визначаємо розширення файлу (за замовчуванням .jpg, якщо URL дивний)
+            string extension = Path.GetExtension(new Uri(imageUrl).AbsolutePath);
+            if (string.IsNullOrEmpty(extension)) extension = ".jpg";
 
-            // Переконуємось, що папка існує
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            string fileName = $"{isbn}_image{extension}";
+            string fullPath = Path.Combine(_storagePath, fileName);
+
+            // Створюємо папку, якщо її немає
+            Directory.CreateDirectory(_storagePath);
 
             await File.WriteAllBytesAsync(fullPath, imageBytes);
 
-            return $"/images/{newFileName}";
+            return $"/images/{fileName}";
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error downloading image for ISBN {isbn}: {ex.Message}");
+            Console.WriteLine($"[Image Error] Failed to download {imageUrl}: {ex.Message}");
             return null;
         }
     }

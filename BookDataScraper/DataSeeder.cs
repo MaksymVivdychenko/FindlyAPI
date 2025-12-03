@@ -1,8 +1,8 @@
-﻿using System.Text;
-using FindlyDAL.DB;
+﻿using FindlyDAL.DB;
 using FindlyDAL.Entities;
 using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace BookDataScraper;
 
@@ -13,132 +13,127 @@ public class DataSeeder
     private readonly ImageService _imageService;
     private readonly HtmlWeb _web;
 
-    public DataSeeder(FindlyDbContext db, BookParsingService parser)
+    public DataSeeder(FindlyDbContext db, BookParsingService parser, ImageService imageService)
     {
         _db = db;
         _parser = parser;
-        _imageService = new ImageService();
+        _imageService = imageService;
         _web = new HtmlWeb { OverrideEncoding = Encoding.UTF8 };
     }
 
-    public async Task SeedAsync(List<BookSourceConfig> sources)
+    public async Task SeedAsync(List<ShopConfig> shops)
     {
-        // Відкриваємо потоки читання для всіх джерел
-        var readers = sources.Select(s => new 
-        { 
-            Config = s, 
-            Reader = new StreamReader(s.LinksFilePath) 
+        // Відкриваємо StreamReader для кожного магазину
+        var readers = shops.Select(shop => new
+        {
+            Config = shop,
+            Reader = new StreamReader(shop.LinksFilePath)
         }).ToList();
 
         try
         {
-            bool anyMoreLines = true;
-            while (anyMoreLines)
+            bool active = true;
+            while (active)
             {
-                anyMoreLines = false;
-                
-                // Проходимо по кожному джерелу по черзі (Round-robin), щоб не перевантажувати один сайт
-                foreach (var source in readers)
+                active = false; // Припускаємо, що всі файли закінчилися
+
+                foreach (var item in readers)
                 {
-                    if (!source.Reader.EndOfStream)
+                    if (!item.Reader.EndOfStream)
                     {
-                        anyMoreLines = true; // Ще є що читати
-                        string link = await source.Reader.ReadLineAsync();
-                        
-                        if (!string.IsNullOrWhiteSpace(link))
+                        active = true; // Знайшли файл, де ще є лінки
+                        string link = (await item.Reader.ReadLineAsync())?.Trim();
+
+                        if (!string.IsNullOrEmpty(link))
                         {
-                            await ProcessLinkAsync(link, source.Config);
+                            await ProcessLinkAsync(link, item.Config);
                         }
                     }
                 }
 
-                if (anyMoreLines)
+                if (active)
                 {
-                    Console.WriteLine("Waiting before next batch...");
-                    await Task.Delay(5000); // Пауза між ітераціями
+                    Console.WriteLine("--- Waiting 5 seconds before next batch ---");
+                    await Task.Delay(5000);
                 }
             }
         }
         finally
         {
-            // Закриваємо всі рідери
-            foreach (var source in readers)
+            foreach (var item in readers)
             {
-                source.Reader.Dispose();
+                item.Reader.Dispose();
             }
         }
     }
 
-    private async Task ProcessLinkAsync(string link, BookSourceConfig config)
+    private async Task ProcessLinkAsync(string link, ShopConfig config)
     {
+        Console.WriteLine($"Processing [{config.Name}]: {link}");
         try
         {
-            Console.WriteLine($"Processing [{config.Name}]: {link}");
             var doc = _web.Load(link);
             
-            // Парсимо книгу (використовуємо твій існуючий сервіс)
             var book = await _parser.ParseAndSaveBookAsync(doc, config.Selectors);
 
-            if (book != null)
+            if (book == null) return;
+            
+            if (string.IsNullOrEmpty(book.ImageUrl))
             {
-                // Обробка зображення
-                if (book.ImageUrl == null || !book.ImageUrl.StartsWith("/images/"))
+                string rawImgUrl = ExtractImageUrl(doc, config);
+                if (!string.IsNullOrEmpty(rawImgUrl))
                 {
-                    // Логіка витягування src, якщо парсер не зміг, або якщо це відносний шлях
-                    // (Тут спрощено, краще щоб ParseAndSaveBookAsync повертав сирий URL)
-                    string rawImageUrl = ExtractRawImageUrl(doc, config);
-                     
-                    if (!string.IsNullOrEmpty(rawImageUrl))
+                    string? localPath = (await _imageService.DownloadAndSaveImageAsync(rawImgUrl, book.ISBN_13));
+                    if (localPath != null)
                     {
-                        var localPath = await _imageService.DownloadAndSaveImageAsync(rawImageUrl, book.ISBN_13 ?? book.Id.ToString());
-                        if (localPath != null)
-                        {
-                            book.ImageUrl = localPath;
-                        }
+                        book.ImageUrl = localPath;
+                        _db.Books.Update(book);
                     }
                 }
-
-                // Додаємо пропозицію (Offer)
-                // Перевіряємо, чи такий офер вже є, щоб уникнути дублікатів
-                bool offerExists = await _db.Offers.AnyAsync(o => o.Link == link && o.ShopId == config.ShopId);
-                if (!offerExists)
-                {
-                    await _db.Offers.AddAsync(new Offer 
-                    { 
-                        BookId = book.Id, 
-                        Link = link, 
-                        ShopId = config.ShopId 
-                    });
-                    await _db.SaveChangesAsync();
-                    Console.WriteLine($"Saved book and offer from {config.Name}");
-                }
-                else
-                {
-                    Console.WriteLine($"Offer already exists for {config.Name}");
-                }
             }
+            
+            bool offerExists = await _db.Offers.AnyAsync(o => o.BookId == book.Id && o.ShopId == config.ShopId);
+            
+            if (!offerExists)
+            {
+                await _db.Offers.AddAsync(new Offer
+                {
+                    BookId = book.Id,
+                    Link = link,
+                    ShopId = config.ShopId
+                });
+                Console.WriteLine($" -> Offer added for {config.Name}");
+            }
+            else
+            {
+                Console.WriteLine($" -> Offer already exists.");
+            }
+            
+            await _db.SaveChangesAsync();
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            Console.WriteLine($"Failed to process {link}: {ex.Message}");
+            Console.WriteLine($"Error processing {link}: {e.Message}");
         }
     }
 
-    private string ExtractRawImageUrl(HtmlDocument doc, BookSourceConfig config)
+    private string ExtractImageUrl(HtmlDocument doc, ShopConfig config)
     {
         try
         {
             var node = doc.DocumentNode.SelectSingleNode(config.Selectors.ImagePathXPath);
-            string src = node?.Attributes["src"]?.Value;
-            
-            if (string.IsNullOrEmpty(src)) return null;
+            if (node == null) return null;
 
-            // Специфічна логіка для KSD (додавання домену)
-            if (config.Name == "KSD" && !src.StartsWith("http"))
-            {
-                return "https://ksd.ua" + src;
-            }
+            string src = node.Attributes["src"]?.Value;
+            if (string.IsNullOrEmpty(src)) return null;
             
+            if (!src.StartsWith("http"))
+            {
+                var baseUrl = config.BaseUrl.TrimEnd('/');
+                var relUrl = src.TrimStart('/');
+                return $"{baseUrl}/{relUrl}";
+            }
+
             return src;
         }
         catch
@@ -146,4 +141,13 @@ public class DataSeeder
             return null;
         }
     }
+}
+
+public class ShopConfig
+{
+    public string Name { get; set; }
+    public Guid ShopId { get; set; }
+    public string LinksFilePath { get; set; }
+    public string BaseUrl { get; set; }
+    public BookSelectors Selectors { get; set; }
 }

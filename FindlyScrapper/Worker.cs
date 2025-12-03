@@ -26,6 +26,7 @@ public class Worker : BackgroundService
         {
             do
             {
+                
                 Console.WriteLine("Виконується щоденне завдання...");
 
                 using (var scope = _scopeFactory.CreateScope())
@@ -33,10 +34,13 @@ public class Worker : BackgroundService
                     HtmlWeb web = new();
                     var dbContext = scope.ServiceProvider.GetRequiredService<FindlyDbContext>();
                     var scrapper = scope.ServiceProvider.GetRequiredService<IScrapper>();
-                    //var notifier = scope.ServiceProvider.GetRequiredService<IUserNotify>();
+                    var notifier = scope.ServiceProvider.GetRequiredService<IUserNotify>();
+                    await TestNotification(dbContext, notifier);
 
                     List<Offer> offers = dbContext.Offers
-                        .Include(q => q.Shop).ToList();
+                        .Include(q => q.LikedOffers)
+                        .Include(q => q.Shop)
+                        .ToList();
                     var ksdOffers = offers.Where(q => q.Shop.Name == "ksd.ua").ToList();
                     var yakabooOffers = offers.Where(q => q.Shop.Name == "Yakaboo.ua").ToList();
                     for (int i = 0; i < ksdOffers.Count || i < yakabooOffers.Count; i++)
@@ -45,7 +49,17 @@ public class Worker : BackgroundService
                         {
                             HtmlDocument doc = web.Load(ksdOffers[i].Link);
                             ksdOffers[i].IsAvailable = scrapper.GetAvailability(doc, ksdOffers[i].Shop.JsonLdPath);
-                            ksdOffers[i].Price = scrapper.GetPrice(doc, ksdOffers[i].Shop.JsonLdPath);
+                            var newPrice = scrapper.GetPrice(doc, ksdOffers[i].Shop.JsonLdPath);
+                            foreach (var likedOffer in ksdOffers[i].LikedOffers)
+                            {
+                                if (likedOffer.PriceToNotify >= newPrice)
+                                {
+                                    var deviceTokens = await dbContext.Users.Where(q => q.LikedOffers.Contains(likedOffer))
+                                        .SelectMany(q => q.UserDevicesList).Select(q => q.DeviceToken).ToListAsync();
+                                    await notifier.NotifyUser(deviceTokens[0], "Акція", "На товар наступила акція");
+                                }
+                            }
+                            ksdOffers[i].Price = newPrice;
                             Console.WriteLine("ksd updated");
                         }
 
@@ -68,6 +82,33 @@ public class Worker : BackgroundService
         catch (OperationCanceledException)
         {
             Console.WriteLine("Воркер зупиняється.");
+        }
+    }
+
+    private async Task ChangeDataForOffer(Offer offer, HtmlWeb web, IUserNotify notifier, IScrapper scrapper, FindlyDbContext dbContext)
+    {
+        HtmlDocument doc = web.Load(offer.Link);
+        offer.IsAvailable = scrapper.GetAvailability(doc, offer.Shop.JsonLdPath);
+        var newPrice = scrapper.GetPrice(doc, offer.Shop.JsonLdPath);
+        foreach (var likedOffer in offer.LikedOffers)
+        {
+            if (likedOffer.PriceToNotify >= newPrice)
+            {
+                var deviceTokens = await dbContext.Users.Where(q => q.LikedOffers.Contains(likedOffer))
+                    .SelectMany(q => q.UserDevicesList).Select(q => q.DeviceToken).ToListAsync();
+                await notifier.NotifyUser(deviceTokens[0], "Акція", "На товар наступила акція");
+            }
+        }
+        offer.Price = newPrice;
+        Console.WriteLine("book updated");
+    }
+
+    private async Task TestNotification(FindlyDbContext dbContext, IUserNotify userNotify)
+    {
+        var tokens = dbContext.UserDevices.Select(q => q.DeviceToken).ToList();
+        foreach (var token in tokens)
+        {
+            await userNotify.NotifyUser(token, "заголовок", "наступила акція");
         }
     }
 }

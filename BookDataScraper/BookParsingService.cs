@@ -1,8 +1,7 @@
-﻿using FindlyDAL.DB;
+﻿namespace BookDataScraper;
+
+using FindlyDAL.DB;
 using FindlyDAL.Entities;
-
-namespace BookDataScraper;
-
 using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
