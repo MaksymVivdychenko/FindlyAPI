@@ -49,6 +49,8 @@ public class AutoMapperProfile : Profile
                 opt.MapFrom(src => src.Offer.Link))
             .ForMember(dest => dest.CurrentPrice, opt =>
                 opt.MapFrom(src => src.Offer.Price))
+            .ForMember(dest => dest.IsAvailable, opt => 
+                opt.MapFrom(src => src.Offer.IsAvailable))
             .ForMember(dest => dest.IsNotifySet, opt =>
                 opt.MapFrom(src => src.PriceToNotify != null));
     }
