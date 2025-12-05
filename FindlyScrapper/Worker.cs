@@ -1,8 +1,6 @@
-using System.Runtime.CompilerServices;
 using System.Text;
 using FindlyDAL.DB;
 using FindlyDAL.Entities;
-using FindlyDAL.Enums;
 using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,53 +24,47 @@ public class Worker : BackgroundService
         {
             do
             {
-                
                 Console.WriteLine("Виконується щоденне завдання...");
 
                 using (var scope = _scopeFactory.CreateScope())
                 {
-                    HtmlWeb web = new();
+                    // Отримуємо сервіси
                     var dbContext = scope.ServiceProvider.GetRequiredService<FindlyDbContext>();
                     var scrapper = scope.ServiceProvider.GetRequiredService<IScrapper>();
                     var notifier = scope.ServiceProvider.GetRequiredService<IUserNotify>();
-                    await TestNotification(dbContext, notifier);
+                    var web = new HtmlWeb();
 
-                    List<Offer> offers = dbContext.Offers
+                    // Завантажуємо офери
+                    var offers =  dbContext.Offers
                         .Include(q => q.LikedOffers)
                         .Include(q => q.Shop)
-                        .ToList();
+                        .Include(q => q.Book);
+
                     var ksdOffers = offers.Where(q => q.Shop.Name == "ksd.ua").ToList();
                     var yakabooOffers = offers.Where(q => q.Shop.Name == "Yakaboo.ua").ToList();
-                    for (int i = 0; i < ksdOffers.Count || i < yakabooOffers.Count; i++)
+
+                    // Визначаємо максимальну кількість ітерацій
+                    int maxCount = Math.Max(ksdOffers.Count, yakabooOffers.Count);
+
+                    for (int i = 0; i < maxCount; i++)
                     {
-                        if (ksdOffers.Count > i)
+                        // Обробка KSD, якщо ще є
+                        if (i < ksdOffers.Count)
                         {
-                            HtmlDocument doc = web.Load(ksdOffers[i].Link);
-                            ksdOffers[i].IsAvailable = scrapper.GetAvailability(doc, ksdOffers[i].Shop.JsonLdPath);
-                            var newPrice = scrapper.GetPrice(doc, ksdOffers[i].Shop.JsonLdPath);
-                            foreach (var likedOffer in ksdOffers[i].LikedOffers)
-                            {
-                                if (likedOffer.PriceToNotify >= newPrice)
-                                {
-                                    var deviceTokens = await dbContext.Users.Where(q => q.LikedOffers.Contains(likedOffer))
-                                        .SelectMany(q => q.UserDevicesList).Select(q => q.DeviceToken).ToListAsync();
-                                    await notifier.NotifyUser(deviceTokens[0], "Акція", "На товар наступила акція");
-                                }
-                            }
-                            ksdOffers[i].Price = newPrice;
-                            Console.WriteLine("ksd updated");
+                            await ProcessOfferAsync(ksdOffers[i], web, scrapper, notifier, dbContext);
+                            Console.WriteLine($"[KSD] Offer updated: {ksdOffers[i].Id}");
                         }
 
-                        if (yakabooOffers.Count > i)
+                        // Обробка Yakaboo, якщо ще є
+                        if (i < yakabooOffers.Count)
                         {
-                            HtmlDocument doc = web.Load(yakabooOffers[i].Link);
-                            yakabooOffers[i].IsAvailable =
-                                scrapper.GetAvailability(doc, yakabooOffers[i].Shop.JsonLdPath);
-                            yakabooOffers[i].Price = scrapper.GetPrice(doc, yakabooOffers[i].Shop.JsonLdPath);
-                            Console.WriteLine("yakaboo updated");
+                            await ProcessOfferAsync(yakabooOffers[i], web, scrapper, notifier, dbContext);
+                            Console.WriteLine($"[Yakaboo] Offer updated: {yakabooOffers[i].Id}");
                         }
-                        dbContext.SaveChanges();
-                        await Task.Delay(5000);
+
+                        // Зберігаємо зміни пачкою (за цю ітерацію) та робимо паузу
+                        await dbContext.SaveChangesAsync(stoppingToken);
+                        await Task.Delay(5000, stoppingToken);
                     }
                 }
 
@@ -83,32 +75,54 @@ public class Worker : BackgroundService
         {
             Console.WriteLine("Воркер зупиняється.");
         }
-    }
-
-    private async Task ChangeDataForOffer(Offer offer, HtmlWeb web, IUserNotify notifier, IScrapper scrapper, FindlyDbContext dbContext)
-    {
-        HtmlDocument doc = web.Load(offer.Link);
-        offer.IsAvailable = scrapper.GetAvailability(doc, offer.Shop.JsonLdPath);
-        var newPrice = scrapper.GetPrice(doc, offer.Shop.JsonLdPath);
-        foreach (var likedOffer in offer.LikedOffers)
+        catch (Exception ex)
         {
-            if (likedOffer.PriceToNotify >= newPrice)
-            {
-                var deviceTokens = await dbContext.Users.Where(q => q.LikedOffers.Contains(likedOffer))
-                    .SelectMany(q => q.UserDevicesList).Select(q => q.DeviceToken).ToListAsync();
-                await notifier.NotifyUser(deviceTokens[0], "Акція", "На товар наступила акція");
-            }
+            Console.WriteLine($"Критична помилка воркера: {ex.Message}");
         }
-        offer.Price = newPrice;
-        Console.WriteLine("book updated");
     }
 
-    private async Task TestNotification(FindlyDbContext dbContext, IUserNotify userNotify)
+    /// <summary>
+    /// Винесена спільна логіка: завантаження сторінки, парсинг та сповіщення.
+    /// </summary>
+    private async Task ProcessOfferAsync(Offer offer, HtmlWeb web, IScrapper scrapper, IUserNotify notifier, FindlyDbContext dbContext)
     {
-        var tokens = dbContext.UserDevices.Select(q => q.DeviceToken).ToList();
-        foreach (var token in tokens)
+        try
         {
-            await userNotify.NotifyUser(token, "заголовок", "наступила акція");
+            HtmlDocument doc = web.Load(offer.Link);
+            
+            // Оновлюємо доступність та ціну
+            offer.IsAvailable = scrapper.GetAvailability(doc, offer.Shop.JsonLdPath);
+            var newPrice = scrapper.GetPrice(doc, offer.Shop.JsonLdPath);
+
+            // Перевірка на сповіщення користувачів
+            if (offer.LikedOffers != null && offer.LikedOffers.Any())
+            {
+                foreach (var likedOffer in offer.LikedOffers)
+                {
+                    if (likedOffer.PriceToNotify >= newPrice)
+                    {
+                        // Знаходимо токени користувачів, які лайкнули цей офер
+                        var deviceTokens = await dbContext.Users
+                            .Where(q => q.LikedOffers.Contains(likedOffer))
+                            .SelectMany(q => q.UserDevicesList)
+                            .Select(q => q.DeviceToken)
+                            .ToListAsync();
+                        
+                        if (deviceTokens.Any())
+                        {
+                            await notifier.NotifyUser(deviceTokens,
+                                $"Знижка на товар \"{offer.Book.Title}\"", $"Ціна на товар \"{offer.Book.Title}\" на сайті {offer.Shop.Name} становить {offer.Price} грн",
+                                offer.Link);
+                        }
+                    }
+                }
+            }
+
+            offer.Price = newPrice;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Помилка при обробці офера {offer.Id} ({offer.Link}): {ex.Message}");
         }
     }
 }

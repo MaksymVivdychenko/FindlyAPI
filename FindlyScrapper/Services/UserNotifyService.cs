@@ -18,62 +18,76 @@ public class UserNotifyService : IUserNotify
         _settings = settings.Value;
     }
 
-    public async Task NotifyUser(string deviceToken, string title, string body)
+    public async Task NotifyUser(List<string> deviceTokens, string title, string body, string offerUrl)
     {
         // 1. Валідація вхідних даних
-        if (string.IsNullOrEmpty(deviceToken))
+        if (deviceTokens.Count == 1)
         {
             return;
         }
 
-        var message = new Message()
+        List<Message> messages = new List<Message>();
+        foreach (var deviceToken in deviceTokens)
         {
-            Token = deviceToken,
-            Notification = new Notification
+            var message = new Message()
             {
-                Title = title,
-                Body = body
-            },
-            // Додаємо Data, щоб клієнт міг обробити клік (опціонально)
-            Data = new Dictionary<string, string>()
-            {
-                { "click_action", "FLUTTER_NOTIFICATION_CLICK" }, // або ваша логіка навігації
-            },
-            Android = new AndroidConfig()
-            {
-                Priority = Priority.High,
-                Notification = new AndroidNotification()
+                Token = deviceToken,
+                Notification = new Notification
                 {
-                    ChannelId = _settings.HighPriority,
+                    Title = title,
+                    Body = body
+                },
+
+                Data = new Dictionary<string, string>()
+                {
+                    {"offer_url", offerUrl}
+                },
+                Android = new AndroidConfig()
+                {
+                    Priority = Priority.High,
+                    Notification = new AndroidNotification()
+                    {
+                        ChannelId = _settings.HighPriority,
+                    }
                 }
-            }
-        };
+            };
+        
+            messages.Add(message);
+        }
 
         try
         {
             // 2. Відправка
-            string response = await FirebaseMessaging.DefaultInstance.SendAsync(message);
-        }
-        catch (FirebaseMessagingException ex)
-        {
-            // Перевіряємо, чи токен не "протух"
-            if (ex.MessagingErrorCode == MessagingErrorCode.Unregistered || 
-                ex.MessagingErrorCode == MessagingErrorCode.InvalidArgument)
+            var batchResponse = await FirebaseMessaging.DefaultInstance.SendEachAsync(messages);
+            for (int i = 0; i < batchResponse.Responses.Count; i++)
             {
-                var device = await _userDevicesRepository.FindSingleAsync(q => q.DeviceToken == deviceToken);
-                if (device != null)
+                var returnValue = batchResponse.Responses[i];
+                if (!returnValue.IsSuccess)
                 {
-                    await _userDevicesRepository.DeleteAsync(device);
+                    var ex = returnValue.Exception.MessagingErrorCode;
+                    if (ex == MessagingErrorCode.Unregistered
+                        || ex == MessagingErrorCode.InvalidArgument)
+                    {
+                        var device =
+                            await _userDevicesRepository
+                                .FindSingleAsync(q => q.DeviceToken == deviceTokens[i]);
+                        if (device != null)
+                        {
+                            await _userDevicesRepository.DeleteAsync(device);
+                        }
+                    }
+
                 }
             }
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Global Firebase Error: {ex.Message}");
         }
     }
 }
 
 public interface IUserNotify
 {
-    public Task NotifyUser(string deviceToken, string title, string body);
+    public Task NotifyUser(List<string> deviceTokens, string title, string body, string offerUrl);
 }
