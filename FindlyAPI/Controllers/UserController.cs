@@ -41,14 +41,7 @@ public class UserController : ControllerBase
 
         var userId = Guid.Parse(userIdClaim.Value);
 
-        try
-        {
-            await _userService.ChangePassword(userId, dto);
-            return Ok(new { message = "Пароль успішно змінено" });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await _userService.ChangePassword(userId, dto);
+        return Ok(new { message = "Пароль успішно змінено" });
     }
 }

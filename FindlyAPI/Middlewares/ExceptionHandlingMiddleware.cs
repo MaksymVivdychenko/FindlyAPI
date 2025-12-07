@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using FindlyBLL.Exceptions;
 
 namespace FindlyAPI.Middlewares;
 
@@ -35,10 +36,14 @@ public class ExceptionHandlingMiddleware
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 response.Message = "Ресурс не знайдено.";
                 break;
-            
-            case ArgumentException:
+            case UserChangePasswordException:
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Message = exception.Message;
+                break;
+            case AuthException:
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 response.Message = exception.Message;
                 break;
 

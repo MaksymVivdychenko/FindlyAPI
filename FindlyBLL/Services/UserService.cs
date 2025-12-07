@@ -4,6 +4,7 @@ using System.Text;
 using AutoMapper;
 using FindlyBLL.DTOs;
 using FindlyBLL.DTOs.UserDtos;
+using FindlyBLL.Exceptions;
 using FindlyBLL.Interfaces;
 using FindlyDAL.DB;
 using FindlyDAL.Entities;
@@ -40,7 +41,8 @@ public class UserService : IUserService
     {
         if (await _userRepo.IsLoginNotUnique(registerUser.Login))
         {
-            throw new Exception("Invalid login");
+            
+            throw new AuthException("Invalid login");
         }
         
         var userEntity = new User { Login = registerUser.Login, PasswordHash = _hasher.HashPassword(registerUser.Password) };
@@ -59,11 +61,11 @@ public class UserService : IUserService
         var userEntity = (await _userRepo.FindAsync(q => q.Login == registerUser.Login)).FirstOrDefault();
         if(userEntity is null)
         {
-            throw new Exception("Incorrect login or password");
+            throw new AuthException("Invalid login or password");
         }
         if (!_hasher.VerifyPassword(registerUser.Password, userEntity.PasswordHash))
         {
-            throw new Exception("Incorrect login or password");
+            throw new AuthException("Invalid login or password");
         }
         await _userDevicesRepo.AddDeviceToUser(userEntity.Id, registerUser.DeviceToken);
         return new AuthResponse
@@ -79,12 +81,12 @@ public class UserService : IUserService
         var user = await _userRepo.GetByIdAsync(userId);
         if(user is null)
         {
-            throw new Exception("user doesn't exist");
+            throw new KeyNotFoundException("User doesn`t exists");
         }
 
         if (!_hasher.VerifyPassword(passwords.OldPassword, user.PasswordHash))
         {
-            throw new Exception("Incorrect password");
+            throw new UserChangePasswordException("Incorrect old password");
         }
 
         user.PasswordHash = _hasher.HashPassword(passwords.NewPassword);

@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text;
+using FindlyAPI.Middlewares;
 using FindlyBLL.AutoMapperProfiles;
 using FindlyBLL.Interfaces;
 using FindlyBLL.Services;
@@ -51,8 +52,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
+app.UseExceptionHandlingMiddleware();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
