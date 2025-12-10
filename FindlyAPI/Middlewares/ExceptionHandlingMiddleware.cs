@@ -1,4 +1,7 @@
-﻿using System.Net;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Net;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FindlyBLL.Exceptions;
 
 namespace FindlyAPI.Middlewares;
@@ -41,6 +44,17 @@ public class ExceptionHandlingMiddleware
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 response.Message = exception.Message;
                 break;
+            case FluentValidation.ValidationException validationEx:
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Message = "Помилка валідації даних:";
+                response.Errors = validationEx.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(
+                        g => g.Key, 
+                        g => g.Select(e => e.ErrorMessage).ToArray()
+                    );
+                break;
             case AuthException:
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 response.StatusCode = (int)HttpStatusCode.Unauthorized;
@@ -63,8 +77,16 @@ public class ErrorResponse
     public int StatusCode { get; set; }
     public string Message { get; set; } = string.Empty;
     
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IDictionary<string, string[]>? Errors { get; set; }
+
     public override string ToString()
     {
-        return System.Text.Json.JsonSerializer.Serialize(this);
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
+        };
+        return JsonSerializer.Serialize(this, options);
     }
 }

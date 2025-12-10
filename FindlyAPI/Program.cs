@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text;
 using FindlyAPI.Middlewares;
 using FindlyBLL.AutoMapperProfiles;
+using FindlyBLL.DTOs.UserDtos;
 using FindlyBLL.Interfaces;
 using FindlyBLL.Services;
 using FindlyDAL.DB;
@@ -12,15 +13,17 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 string pathToSharedAppsettings = Path.Combine(builder.Environment.ContentRootPath, "..", "appsettings.shared.json");
-
 builder.Configuration.AddJsonFile(Path.GetFullPath(pathToSharedAppsettings), optional: false, reloadOnChange: true);
 builder.Services.AddControllers();
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserDto>();
+builder.Services.AddValidatorsFromAssemblyContaining<UserChangePasswordDto>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IOfferService, OfferService>();
 builder.Services.AddScoped<IUserService, UserService>();

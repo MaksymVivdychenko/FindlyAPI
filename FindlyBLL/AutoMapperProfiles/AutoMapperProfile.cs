@@ -17,6 +17,8 @@ public class AutoMapperProfile : Profile
         CreateMap<Publisher, PublisherGetDto>();
 
         CreateMap<Book, BookGetDto>()
+            .ForMember(dest => dest.ImageUrl, opt =>
+                opt.MapFrom(src => "http://10.0.2.2:5132" + src.ImageUrl))
             .ForMember(dest => dest.Authors, opt =>
                 opt.MapFrom(src => src.Authors.Select(q => q.Name)))
             .ForMember(dest => dest.Cover, opt =>
@@ -34,13 +36,13 @@ public class AutoMapperProfile : Profile
             .ForMember(dest => dest.ShopName, opt =>
                 opt.MapFrom(src => src.Shop.Name))
             .ForMember(dest => dest.ShopLogoUrl, opt =>
-                opt.MapFrom(src => src.Shop.ShopImageUrl));
+                opt.MapFrom(src => "http://10.0.2.2:5132" + src.Shop.ShopImageUrl));
 
         CreateMap<UserLikedOffers, LikedOfferDto>()
             .ForMember(dest => dest.BookTitle, opt =>
                 opt.MapFrom(src => src.Offer.Book.Title))
-            .ForMember(dest => dest.BookImageUrl, opt =>
-                opt.MapFrom(src => src.Offer.Book.ImageUrl))
+            .ForMember(dest =>  dest.BookImageUrl, opt =>
+                opt.MapFrom(src => "http://10.0.2.2:5132" + src.Offer.Book.ImageUrl))
             .ForMember(dest => dest.Authors, opt =>
                 opt.MapFrom(src => src.Offer.Book.Authors.Select(q => q.Name)))
             .ForMember(dest => dest.ShopName, opt =>

@@ -20,12 +20,6 @@ public class UserNotifyService : IUserNotify
 
     public async Task NotifyUser(List<string> deviceTokens, string title, string body, string offerUrl)
     {
-        // 1. Валідація вхідних даних
-        if (deviceTokens.Count == 1)
-        {
-            return;
-        }
-
         List<Message> messages = new List<Message>();
         foreach (var deviceToken in deviceTokens)
         {

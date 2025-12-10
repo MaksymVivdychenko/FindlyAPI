@@ -9,6 +9,7 @@ using FindlyBLL.Interfaces;
 using FindlyDAL.DB;
 using FindlyDAL.Entities;
 using FindlyDAL.Interfaces;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -24,10 +25,14 @@ public class UserService : IUserService
     private readonly IConfiguration _configuration;
     private readonly IUserDevicesRepository _userDevicesRepo;
     private readonly IMapper _mapper;
+    private readonly IValidator<RegisterUserDto> _registrationValidation;
+    private readonly IValidator<UserChangePasswordDto> _changePassword;
 
     public UserService(IPasswordHasher hasher, FindlyDbContext context,
         IUserRepository userRepo , IConfiguration configuration,
-        IUserDevicesRepository userDevicesRepo,IMapper mapper)
+        IUserDevicesRepository userDevicesRepo,IMapper mapper,
+        IValidator<RegisterUserDto> registrationValidation,
+        IValidator<UserChangePasswordDto> changePassword)
     {
         _hasher = hasher;
         _context = context;
@@ -35,14 +40,22 @@ public class UserService : IUserService
         _configuration = configuration;
         _userDevicesRepo = userDevicesRepo;
         _mapper = mapper;
+        _registrationValidation = registrationValidation;
+        _changePassword = changePassword;
     }
 
     public async Task<AuthResponse> RegisterUser(RegisterUserDto registerUser)
     {
+        var passwordValidationResult = await _registrationValidation.ValidateAsync(registerUser);
+
+        if (!passwordValidationResult.IsValid)
+        {
+            throw new ValidationException(passwordValidationResult.Errors);
+        }
         if (await _userRepo.IsLoginNotUnique(registerUser.Login))
         {
             
-            throw new AuthException("Invalid login");
+            throw new AuthException("Цей логін вже існує");
         }
         
         var userEntity = new User { Login = registerUser.Login, PasswordHash = _hasher.HashPassword(registerUser.Password) };
@@ -61,11 +74,11 @@ public class UserService : IUserService
         var userEntity = (await _userRepo.FindAsync(q => q.Login == registerUser.Login)).FirstOrDefault();
         if(userEntity is null)
         {
-            throw new AuthException("Invalid login or password");
+            throw new AuthException("Неправильний логін чи пароль");
         }
         if (!_hasher.VerifyPassword(registerUser.Password, userEntity.PasswordHash))
         {
-            throw new AuthException("Invalid login or password");
+            throw new AuthException("Неправильний логін чи пароль");
         }
         await _userDevicesRepo.AddDeviceToUser(userEntity.Id, registerUser.DeviceToken);
         return new AuthResponse
@@ -83,10 +96,14 @@ public class UserService : IUserService
         {
             throw new KeyNotFoundException("User doesn`t exists");
         }
-
         if (!_hasher.VerifyPassword(passwords.OldPassword, user.PasswordHash))
         {
-            throw new UserChangePasswordException("Incorrect old password");
+            throw new UserChangePasswordException("Неправильний старий пароль");
+        }
+        var passwordValidationResult = await _changePassword.ValidateAsync(passwords);
+        if (!passwordValidationResult.IsValid)
+        {
+            throw new ValidationException(passwordValidationResult.Errors);
         }
 
         user.PasswordHash = _hasher.HashPassword(passwords.NewPassword);
