@@ -7,6 +7,7 @@ class Program
 {
     static async Task Main(string[] args)
     {
+        await new LinkParser().RunParsingAsync();
         var optionBuilder = new DbContextOptionsBuilder<FindlyDbContext>();
         optionBuilder.UseSqlServer("Server=localhost; Database=FindlyDb; Trusted_Connection=True; TrustServerCertificate=True");
         

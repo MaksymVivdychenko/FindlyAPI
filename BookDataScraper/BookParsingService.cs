@@ -39,13 +39,11 @@ public class BookParsingService
         }
 
         // --- 2. Пошук існуючої книги в БД ---
-        // (Як ви і просили: шукаємо в БД)
         var existingBook = await _context.Books
             .AsNoTracking() // Використовуємо AsNoTracking для швидкого read-only запиту
             .FirstOrDefaultAsync(b => b.ISBN_13 == isbnClean);
 
         // --- 3. Якщо книга існує, пропускаємо ---
-        // (Як ви і просили: пропускаємо цикл)
         if (existingBook != null)
         {
             // Або логування

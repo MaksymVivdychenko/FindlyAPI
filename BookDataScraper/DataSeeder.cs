@@ -35,13 +35,13 @@ public class DataSeeder
             bool active = true;
             while (active)
             {
-                active = false; // Припускаємо, що всі файли закінчилися
+                active = false;
 
                 foreach (var item in readers)
                 {
                     if (!item.Reader.EndOfStream)
                     {
-                        active = true; // Знайшли файл, де ще є лінки
+                        active = true;
                         string link = (await item.Reader.ReadLineAsync())?.Trim();
 
                         if (!string.IsNullOrEmpty(link))
